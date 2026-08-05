@@ -24,7 +24,7 @@ jobs:
       - name: Build Windows Binary
         run: |
           $version = "${{ github.ref_name }}"
-          go build -ldflags="-s -w -X main.version=$version -X main.buildDate=$(Get-Date -Format 'yyyy-MM-dd')" -o devstack-windows-amd64.exe ./cmd/devstack
+          go build -ldflags="-s -w -X main.version=$version -X main.buildDate=$(Get-Date -Format 'yyyy-MM-dd')" -o devstack-windows-amd64.exe .
 
       - name: Generate SHA-256 Checksum
         run: |

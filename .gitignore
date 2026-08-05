@@ -24,3 +24,5 @@ coverage.html
 *~
 
 node_modules/
+recipes.example.json
+.github/branch-ruleset.json

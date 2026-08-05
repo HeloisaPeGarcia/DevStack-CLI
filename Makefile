@@ -10,20 +10,20 @@ GO           := go
 all: test build
 
 build:
-	$(GO) build $(LDFLAGS) -o $(BINARY) ./cmd/devstack
+	$(GO) build $(LDFLAGS) -o $(BINARY) .
 	@echo "✔ Binário gerado: $(BINARY) (versão: $(VERSION))"
 
 run:
-	$(GO) run ./cmd/devstack bootstrap \
+	$(GO) run . bootstrap \
 		--stack "Go Backend + React Frontend" \
 		--project-name demo-app \
 		--dry-run
 
 run-audit:
-	$(GO) run ./cmd/devstack audit --stack go-react
+	$(GO) run . audit --stack go-react
 
 run-list:
-	$(GO) run ./cmd/devstack list-stacks
+	$(GO) run . list-stacks
 
 test:
 	$(GO) test ./... -v -race -count=1
@@ -35,7 +35,7 @@ lint:
 	golangci-lint run ./...
 
 install:
-	$(GO) install $(LDFLAGS) ./cmd/devstack
+	$(GO) install $(LDFLAGS) .
 	@echo "✔ devstack instalado em $(shell go env GOPATH)/bin"
 
 clean:
