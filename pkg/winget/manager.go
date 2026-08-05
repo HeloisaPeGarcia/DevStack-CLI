@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"time"
 )
 
 type InstallCallback func(pkg config.SystemPackage, status string, err error)
@@ -82,17 +81,4 @@ func (m *Manager) InstallPackage(ctx context.Context, pkg config.SystemPackage, 
 	return nil
 }
 
-func (m *Manager) InstallPackages(packages []config.SystemPackage, callback InstallCallback) map[string]error {
-	errorsMap := make(map[string]error)
 
-	for _, pkg := range packages {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		err := m.InstallPackage(ctx, pkg, callback)
-		if err != nil {
-			errorsMap[pkg.WingetID] = err
-		}
-		cancel()
-	}
-
-	return errorsMap
-}

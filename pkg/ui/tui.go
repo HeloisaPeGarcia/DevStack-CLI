@@ -48,7 +48,7 @@ func PrintBanner() {
 }
 
 func PrintHeader(title string) {
-	fmt.Fprintf(defaultWriter, "\n%s=== %s ===%s\n\n", colorize(Cyan+Bold, ""), title, "")
+	fmt.Fprintf(defaultWriter, "\n%s %s %s\n\n", colorize(Cyan+Bold, "==="), title, colorize(Cyan+Bold, "==="))
 }
 
 func PrintSuccess(msg string) {
