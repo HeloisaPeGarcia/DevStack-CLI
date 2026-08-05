@@ -1,0 +1,41 @@
+name: Release Automation
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build Windows Binary
+        run: |
+          $version = "${{ github.ref_name }}"
+          go build -ldflags="-s -w -X main.version=$version -X main.buildDate=$(Get-Date -Format 'yyyy-MM-dd')" -o devstack-windows-amd64.exe ./cmd/devstack
+
+      - name: Generate SHA-256 Checksum
+        run: |
+          Get-FileHash -Algorithm SHA256 devstack-windows-amd64.exe | Format-List > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            devstack-windows-amd64.exe
+            checksums.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true

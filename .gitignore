@@ -1,0 +1,26 @@
+# Executáveis Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+devstack
+
+# Testes e cobertura
+*.test
+*.out
+coverage.html
+
+# Diretórios de build e projetos temporários
+/dist/
+/demo-app/
+/my-dev-app/
+/my-app/
+
+# IDEs e editores
+.idea/
+.vscode/
+*.swp
+*~
+
+node_modules/

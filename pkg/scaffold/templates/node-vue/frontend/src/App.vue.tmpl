@@ -1,0 +1,26 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
+const health = ref('Carregando...')
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/health')
+    const data = await res.json()
+    health.value = `${data.status} (${data.service})`
+  } catch (e) {
+    health.value = 'Off-line'
+  }
+})
+</script>
+
+<template>
+  <main style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto;">
+    <h1>🚀 App {{.ProjectName}} (Vue 3)</h1>
+    <p>Gerado pelo <strong>DevStack CLI</strong></p>
+    <div style="background: #f4f4f5; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+      <h3>Status do Backend Node.js:</h3>
+      <p><strong>{{ health }}</strong></p>
+    </div>
+  </main>
+</template>

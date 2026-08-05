@@ -1,0 +1,19 @@
+import streamlit as st
+import requests
+
+st.set_page_config(page_title="{{.ProjectName}} Dashboard", page_icon="🤖")
+
+st.title("🤖 {{.ProjectName}} Dashboard")
+st.caption("Gerado pelo DevStack CLI")
+
+st.subheader("Status do Backend FastAPI")
+
+try:
+    response = requests.get("http://localhost:8000/api/health")
+    if response.status_code == 200:
+        data = response.json()
+        st.success(f"Status: {data['status']} — Serviço: {data['service']}")
+    else:
+        st.warning(f"Resposta com erro: {response.status_code}")
+except Exception as e:
+    st.error(f"Não foi possível conectar à API: {e}")
