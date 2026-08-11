@@ -26,7 +26,7 @@ if (-not $GoPath) {
 
 if ($GoExe) {
     Write-Host "✔ Executando DevStack via Go ($GoExe)..." -ForegroundColor Green
-    $cmdArgs = @("run", "./cmd/devstack", $Command, "--stack", "$Stack", "--project-name", "$ProjectName")
+    $cmdArgs = @("run", ".", $Command, "--stack", "$Stack", "--project-name", "$ProjectName")
     if ($DryRun) { $cmdArgs += "--dry-run" }
     
     & $GoExe $cmdArgs
