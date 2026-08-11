@@ -84,10 +84,10 @@ func TestResolveStack_Fallback(t *testing.T) {
 	r := resolver.NewResolver()
 
 	recipe, found := r.ResolveStack("xyz123desconhecido")
-	if !found {
-		t.Fatal("esperava fallback para a recipe padrão")
+	if found {
+		t.Error("esperava found = false para entrada não correspondida (fallback)")
 	}
 	if recipe == nil {
-		t.Fatal("recipe retornada é nil")
+		t.Fatal("recipe retornada no fallback não deve ser nil")
 	}
 }

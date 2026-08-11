@@ -63,7 +63,7 @@ func (r *Resolver) ResolveStack(input string) (*config.StackRecipe, bool) {
 	}
 
 	if len(r.recipes) > 0 {
-		return &r.recipes[0], true
+		return &r.recipes[0], false
 	}
 
 	return nil, false

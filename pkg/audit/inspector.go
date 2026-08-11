@@ -57,8 +57,8 @@ func (i *Inspector) CheckPackage(pkg config.SystemPackage) AuditResult {
 	cmd := exec.CommandContext(ctx, pkg.CheckCmd, pkg.CheckArgs...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		result.Status = StatusInstalled
-		result.VersionFound = "Versão desconhecida"
+		result.Status = StatusError
+		result.ErrMessage = fmt.Sprintf("Erro ao executar '%s': %v", pkg.CheckCmd, err)
 		return result
 	}
 

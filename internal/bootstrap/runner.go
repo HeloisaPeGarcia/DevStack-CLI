@@ -115,10 +115,13 @@ func (r *Runner) RunAudit(args []string) int {
 	_ = fs.Parse(args)
 
 	res := resolver.NewResolver()
-	recipe, found := res.ResolveStack(*stackFlag)
-	if !found {
+	recipe, exactMatch := res.ResolveStack(*stackFlag)
+	if recipe == nil {
 		ui.PrintError(fmt.Sprintf("Stack '%s' não encontrada.", *stackFlag))
 		return ExitConfigError
+	}
+	if !exactMatch {
+		ui.PrintWarning(fmt.Sprintf("Stack '%s' não encontrada exatamente. Auditando receita padrão '%s'.", *stackFlag, recipe.Name))
 	}
 
 	inspector := audit.NewInspector()
@@ -167,10 +170,13 @@ func (r *Runner) RunBootstrap(args []string) int {
 	_ = fs.Parse(args)
 
 	res := resolver.NewResolver()
-	recipe, found := res.ResolveStack(*stackFlag)
-	if !found {
+	recipe, exactMatch := res.ResolveStack(*stackFlag)
+	if recipe == nil {
 		ui.PrintError(fmt.Sprintf("Não foi possível resolver a stack '%s'", *stackFlag))
 		return ExitConfigError
+	}
+	if !exactMatch {
+		ui.PrintWarning(fmt.Sprintf("Stack '%s' não encontrada exatamente. Provisionando receita padrão '%s'.", *stackFlag, recipe.Name))
 	}
 
 	ui.PrintHeader(fmt.Sprintf("Iniciando Bootstrap: %s", recipe.Name))
@@ -248,7 +254,7 @@ func (r *Runner) RunBootstrap(args []string) int {
 	ui.PrintHeader("Fase 4/4: Configurando Ambiente de IDE (VS Code)")
 	ideConfig := ide.NewConfigurator(projectPath, *dryRunFlag)
 	if !*dryRunFlag {
-		if err := ideConfig.SetupWorkspaceConfigs(recipe.VSCodeExtensions); err != nil {
+		if err := ideConfig.SetupWorkspaceConfigs(*recipe); err != nil {
 			ui.PrintError(fmt.Sprintf("Erro ao configurar VS Code: %v", err))
 		} else {
 			ui.PrintSuccess("Configurações `.vscode/settings.json`, `launch.json` e `extensions.json` criadas!")

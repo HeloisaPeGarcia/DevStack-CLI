@@ -202,15 +202,17 @@ Projeto gerado automaticamente pelo **devstack CLI**.
 	}
 
 	mainTmpl, err := templateFS.ReadFile("templates/go-react/backend/cmd/api/main.go.tmpl")
-	if err == nil {
-		content := strings.ReplaceAll(string(mainTmpl), "{{.ProjectName}}", g.ProjectName)
-		files[filepath.Join(g.OutputDir, "backend", "cmd", "api", "main.go")] = content
+	if err != nil {
+		return fmt.Errorf("falha ao ler template main.go.tmpl: %w", err)
 	}
+	content := strings.ReplaceAll(string(mainTmpl), "{{.ProjectName}}", g.ProjectName)
+	files[filepath.Join(g.OutputDir, "backend", "cmd", "api", "main.go")] = content
 
 	tsTmpl, err := templateFS.ReadFile("templates/go-react/frontend/tsconfig.json.tmpl")
-	if err == nil {
-		files[filepath.Join(g.OutputDir, "frontend", "tsconfig.json")] = string(tsTmpl)
+	if err != nil {
+		return fmt.Errorf("falha ao ler template tsconfig.json.tmpl: %w", err)
 	}
+	files[filepath.Join(g.OutputDir, "frontend", "tsconfig.json")] = string(tsTmpl)
 
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -242,6 +244,46 @@ COPY . .
 EXPOSE 8000 8501
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 `,
+		filepath.Join(g.OutputDir, "docker-compose.yml"): fmt.Sprintf(`version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: %s_api
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  dashboard:
+    build: .
+    container_name: %s_dashboard
+    ports:
+      - "8501:8501"
+    command: streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0
+    depends_on:
+      - api
+`, g.ProjectName, g.ProjectName),
+		filepath.Join(g.OutputDir, "Makefile"): `dev-api:
+	uvicorn app.main:app --reload
+
+dev-dashboard:
+	streamlit run dashboard/app.py
+
+docker-up:
+	docker-compose up -d
+
+docker-down:
+	docker-compose down
+`,
+		filepath.Join(g.OutputDir, ".gitignore"): `__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+.pytest_cache/
+`,
 		filepath.Join(g.OutputDir, "README.md"): fmt.Sprintf(`# %s (Python FastAPI + Streamlit)
 
 Projeto gerado pelo **DevStack CLI**.
@@ -256,21 +298,22 @@ streamlit run dashboard/app.py
 	}
 
 	mainPy, err := templateFS.ReadFile("templates/python-fastapi/app/main.py.tmpl")
-	if err == nil {
-		content := strings.ReplaceAll(string(mainPy), "{{.ProjectName}}", g.ProjectName)
-		files[filepath.Join(g.OutputDir, "app", "main.py")] = content
+	if err != nil {
+		return fmt.Errorf("falha ao ler template main.py.tmpl: %w", err)
 	}
+	files[filepath.Join(g.OutputDir, "app", "main.py")] = strings.ReplaceAll(string(mainPy), "{{.ProjectName}}", g.ProjectName)
 
 	dashPy, err := templateFS.ReadFile("templates/python-fastapi/dashboard/app.py.tmpl")
-	if err == nil {
-		content := strings.ReplaceAll(string(dashPy), "{{.ProjectName}}", g.ProjectName)
-		files[filepath.Join(g.OutputDir, "dashboard", "app.py")] = content
+	if err != nil {
+		return fmt.Errorf("falha ao ler template app.py.tmpl: %w", err)
 	}
+	files[filepath.Join(g.OutputDir, "dashboard", "app.py")] = strings.ReplaceAll(string(dashPy), "{{.ProjectName}}", g.ProjectName)
 
 	reqTxt, err := templateFS.ReadFile("templates/python-fastapi/requirements.txt.tmpl")
-	if err == nil {
-		files[filepath.Join(g.OutputDir, "requirements.txt")] = string(reqTxt)
+	if err != nil {
+		return fmt.Errorf("falha ao ler template requirements.txt.tmpl: %w", err)
 	}
+	files[filepath.Join(g.OutputDir, "requirements.txt")] = string(reqTxt)
 
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -285,6 +328,7 @@ func (g *Generator) GenerateNodeVueApp() error {
 	dirs := []string{
 		filepath.Join(g.OutputDir, "backend", "src"),
 		filepath.Join(g.OutputDir, "frontend", "src"),
+		filepath.Join(g.OutputDir, "frontend", "public"),
 	}
 
 	for _, d := range dirs {
@@ -314,6 +358,18 @@ func (g *Generator) GenerateNodeVueApp() error {
   }
 }
 `, g.ProjectName),
+		filepath.Join(g.OutputDir, "backend", "tsconfig.json"): `{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}
+`,
 		filepath.Join(g.OutputDir, "frontend", "package.json"): fmt.Sprintf(`{
   "name": "%s-frontend",
   "version": "0.1.0",
@@ -333,19 +389,77 @@ func (g *Generator) GenerateNodeVueApp() error {
   }
 }
 `, g.ProjectName),
+		filepath.Join(g.OutputDir, "frontend", "vite.config.ts"): `import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
+  }
+})
+`,
+		filepath.Join(g.OutputDir, "frontend", "index.html"): fmt.Sprintf(`<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>%s</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+`, g.ProjectName),
+		filepath.Join(g.OutputDir, "frontend", "src", "main.ts"): `import { createApp } from 'vue'
+import App from './App.vue'
+
+createApp(App).mount('#app')
+`,
+		filepath.Join(g.OutputDir, "docker-compose.yml"): fmt.Sprintf(`version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: %s_backend
+    ports:
+      - "8080:8080"
+
+volumes:
+  node_data:
+`, g.ProjectName),
+		filepath.Join(g.OutputDir, "Makefile"): `dev-backend:
+	cd backend && pnpm dev
+
+dev-frontend:
+	cd frontend && pnpm install && pnpm dev
+
+docker-up:
+	docker-compose up -d
+`,
+		filepath.Join(g.OutputDir, "README.md"): fmt.Sprintf(`# %s (Node.js Express + Vue 3)
+
+Projeto gerado pelo **DevStack CLI**.
+`, g.ProjectName),
 	}
 
 	idxTs, err := templateFS.ReadFile("templates/node-vue/backend/src/index.ts.tmpl")
-	if err == nil {
-		content := strings.ReplaceAll(string(idxTs), "{{.ProjectName}}", g.ProjectName)
-		files[filepath.Join(g.OutputDir, "backend", "src", "index.ts")] = content
+	if err != nil {
+		return fmt.Errorf("falha ao ler template index.ts.tmpl: %w", err)
 	}
+	files[filepath.Join(g.OutputDir, "backend", "src", "index.ts")] = strings.ReplaceAll(string(idxTs), "{{.ProjectName}}", g.ProjectName)
 
 	appVue, err := templateFS.ReadFile("templates/node-vue/frontend/src/App.vue.tmpl")
-	if err == nil {
-		content := strings.ReplaceAll(string(appVue), "{{.ProjectName}}", g.ProjectName)
-		files[filepath.Join(g.OutputDir, "frontend", "src", "App.vue")] = content
+	if err != nil {
+		return fmt.Errorf("falha ao ler template App.vue.tmpl: %w", err)
 	}
+	files[filepath.Join(g.OutputDir, "frontend", "src", "App.vue")] = strings.ReplaceAll(string(appVue), "{{.ProjectName}}", g.ProjectName)
 
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
